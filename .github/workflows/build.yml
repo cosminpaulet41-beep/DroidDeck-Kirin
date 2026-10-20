@@ -571,7 +571,8 @@ jobs:
         run: |
           for log in /tmp/build.log app/build/unit-tests.log; do
             [ -f "$log" ] || continue
-            lines=$(grep -E '^e: |error:|FAILED|What went wrong|Exception|\.kt:[0-9]+|\.java:[0-9]+' "$log" | grep -v '^w: ' | head -60)
+            lines=$(grep -E ' FAILED$|^e: |What went wrong|tests completed' "$log" | head -40)
+            [ -n "$lines" ] || lines=$(grep -E 'error:|Exception|\.kt:[0-9]+|\.java:[0-9]+' "$log" | grep -v '^w: ' | head -60)
             [ -n "$lines" ] || lines=$(tail -40 "$log")
             msg=$(printf '%s' "$lines" | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
             echo "::error title=$(basename "$log")::$msg"
@@ -622,7 +623,8 @@ jobs:
         run: |
           for log in /tmp/build.log app/build/unit-tests.log; do
             [ -f "$log" ] || continue
-            lines=$(grep -E '^e: |error:|FAILED|What went wrong|Exception|\.kt:[0-9]+|\.java:[0-9]+' "$log" | grep -v '^w: ' | head -60)
+            lines=$(grep -E ' FAILED$|^e: |What went wrong|tests completed' "$log" | head -40)
+            [ -n "$lines" ] || lines=$(grep -E 'error:|Exception|\.kt:[0-9]+|\.java:[0-9]+' "$log" | grep -v '^w: ' | head -60)
             [ -n "$lines" ] || lines=$(tail -40 "$log")
             msg=$(printf '%s' "$lines" | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
             echo "::error title=$(basename "$log")::$msg"
