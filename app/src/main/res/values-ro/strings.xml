@@ -680,7 +680,7 @@
     <string name="setup_gpu_unsupported">GPU neacceptat</string>
     <string name="setup_gpu_detail">%1$s · %2$s</string>
     <string name="setup_gpu_untested_detail">%1$s: %2$s</string>
-    <string name="setup_gpu_unsupported_detail">Steam are nevoie de un driver Adreno; %1$s poate arăta un ecran negru</string>
+    <string name="setup_gpu_unsupported_detail">Steam are nevoie de un driver Adreno sau Mali; %1$s poate arăta un ecran negru</string>
     <string name="setup_runtime">Mediul de execuție Linux</string>
     <string name="setup_runtime_progress">%1$s · %2$d%%</string>
     <string name="setup_runtime_missing">Neinstalat · circa 3 GB, instalat la prima apăsare pe Play</string>
@@ -1221,8 +1221,8 @@
     <string name="main_wadb_unavailable">Depanarea wireless nu este disponibilă</string>
     <string name="main_adb_copied">Comanda ADB copiată</string>
     <string name="main_pick_roms">Alege folderul ROMs</string>
-    <string name="main_non_adreno_title">Nu este un GPU Adreno</string>
-    <string name="main_non_adreno_text">Turnip acceptă GPU-uri Adreno. Pe %1$s, Steam poate arăta un ecran negru. Descărcare: %2$.0f MB.</string>
+    <string name="main_non_adreno_title">Niciun GPU acceptat</string>
+    <string name="main_non_adreno_text">Nu există un driver Vulkan pentru %1$s. Adreno folosește Turnip, Mali folosește PanVK sau driverul producătorului; pe orice alt GPU, Steam poate arăta un ecran negru. Descărcare: %2$.0f MB.</string>
     <string name="main_install_anyway">Instalează oricum</string>
     <string name="main_remove_runtime_title">Elimină mediul de execuție Linux</string>
     <string name="main_remove_runtime_text">Aceasta șterge mediul de execuție, clientul Steam din interiorul lui și fiecare joc instalat acolo.</string>
@@ -1274,7 +1274,7 @@
     <string name="drivers_not_checked">Neverificat încă - apasă reîmprospătare pentru a căuta drivere noi</string>
     <string name="drivers_bundle_sets_display">Android + Linux: setează driverul de afișaj odată cu el</string>
     <string name="drivers_bundle_sets_runtime">Android + Linux: setează driverul mediului de execuție odată cu el</string>
-    <string name="drivers_runtime_builtin">Turnip-ul integrat în mediul de execuție</string>
+    <string name="drivers_runtime_builtin">driverul integrat în mediul de execuție</string>
     <string name="drivers_system_vulkan">Vulkan de sistem: nicio versiune inclusă pentru acest GPU</string>
     <string name="drivers_bundled">%1$s (inclus)</string>
     <string name="drivers_manual">Manual</string>
@@ -1298,7 +1298,7 @@
     <string name="drivers_using_restart">Se folosește %1$s %2$s. Driverul de afișaj se aplică după repornirea DroidDeck.</string>
     <string name="drivers_using_quest">Se folosesc driverul de afișare livrat cu Quest și mediul de execuție implicit.</string>
     <string name="drivers_using_quest_restart">Se folosesc driverul de afișare livrat cu Quest și mediul de execuție implicit. Driverul de afișare se aplică după repornirea DroidDeck.</string>
-    <string name="drivers_not_a_driver">Nu este o arhivă de driver: nici driver AdrenoTools, nici Turnip -Linux, nici pachet Android + Linux</string>
+    <string name="drivers_not_a_driver">Nu este o arhivă de driver: nici driver AdrenoTools, nici driver Vulkan Linux (Turnip, PanVK sau lavapipe), nici pachet Android + Linux</string>
     <string name="drivers_import_failed">Importul a eșuat: %1$s</string>
     <string name="drivers_imported_unnamed">Driver importat</string>
     <string name="drivers_using_bundle">Se folosește %1$s ca driver pentru mediul de execuție și pentru afișaj, deopotrivă.</string>
@@ -1820,11 +1820,12 @@
     <string name="look_anime_edge">Margini anime</string>
     <string name="look_anime_edge_desc">Contururi toon plus claritate.</string>
 
-    <string name="gpuinfo_not_adreno">Nu este un GPU Adreno</string>
+    <string name="gpuinfo_not_adreno">Nu este un GPU Adreno sau Mali</string>
     <string name="gpuinfo_supported">Acceptat</string>
     <string name="gpuinfo_experimental">Experimental: driverele sale sunt versiuni de test</string>
+    <string name="gpuinfo_experimental_mali">Experimental: are nevoie de un driver Vulkan PanVK sau de la producător, nu de Turnip</string>
     <string name="gpuinfo_below_tested">Sub hardware-ul testat (Adreno 725 și mai nou): poate să nu ruleze</string>
-    <string name="gpuinfo_unsupported">Neacceptat: DroidDeck are nevoie de un GPU Adreno (Snapdragon)</string>
+    <string name="gpuinfo_unsupported">Neacceptat: DroidDeck are nevoie de un GPU Adreno (Snapdragon) sau Mali</string>
 
     <string name="turnip_rate_limited">S-a atins limita de solicitări a GitHub - încearcă din nou mai târziu</string>
     <string name="turnip_github_http">GitHub a răspuns cu HTTP %1$d</string>
@@ -1840,7 +1841,7 @@
     <string name="turnip_reject_library_missing">meta.json numește %1$s, care nu este în arhivă</string>
     <string name="turnip_reject_not_aarch64">%1$s nu este o bibliotecă partajată ELF AArch64 pe 64 de biți</string>
     <string name="turnip_reject_glibc">%1$s leagă glibc - un Turnip „-Linux”, care aparține la „Driver pentru mediul de execuție Linux”</string>
-    <string name="lvd_no_library">Niciun libvulkan_freedreno*.so în această arhivă. O arhivă Turnip Android (AdrenoTools) sau „-Wayland” nu este un driver pentru mediul de execuție Linux.</string>
+    <string name="lvd_no_library">Niciun driver Vulkan Linux în această arhivă. Se așteaptă libvulkan_freedreno*.so, libvulkan_panvk*.so sau libvulkan_lvp*.so; o arhivă Android (AdrenoTools) sau „-Wayland” nu este un driver pentru mediul de execuție Linux.</string>
     <string name="lvd_not_aarch64">%1$s nu este o bibliotecă partajată ELF AArch64 pe 64 de biți.</string>
     <string name="lvd_not_glibc">%1$s nu este un driver glibc - leagă libc-ul Android. Mediul de execuție Linux are nevoie de o arhivă „-Linux”; un Turnip simplu sau „-Wayland” nu poate fi încărcat deloc de clientul Steam.</string>
     <string name="bundle_no_manifest">Nu este un pachet de drivere: niciun manifest.json nu numește un driver android și unul linux</string>

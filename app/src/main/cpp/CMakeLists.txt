@@ -34,7 +34,7 @@ add_subdirectory(questxr)
 add_library(sdnative SHARED sdnative/sdnative.c)
 target_link_libraries(sdnative log)
 
-add_library(deviceinfo SHARED deviceinfo/vkinfo.c)
+add_library(deviceinfo SHARED deviceinfo/vkinfo.c deviceinfo/kbaseinfo.c)
 target_link_libraries(deviceinfo dl)
 
 add_library(termux SHARED termux/termux.c)

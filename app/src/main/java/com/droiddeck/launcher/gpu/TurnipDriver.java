@@ -284,6 +284,13 @@ public final class TurnipDriver {
         }
         String quest = QuestExperimental.INSTANCE.defaultAndroidDriver();
         if (quest != null) return quest;
+        // Turnip opens the GPU through KGSL, which only an Adreno has. Anything else (a Mali on
+        // mali_kbase) stays on the system Vulkan driver, which imports the session's dma-bufs itself.
+        if (!GpuInfo.adrenoPresent()) {
+            Log.i(TAG, "not an Adreno: using the system Vulkan driver");
+            DriverSetupLog.write(context, "choose.system reason=not-adreno");
+            return null;
+        }
         String model = gpuModel();
         Log.i(TAG, "gpu model: " + (model == null ? "unknown" : model));
         if (model != null) {

@@ -34,6 +34,7 @@ internal class AddonPack(val name: String, private val sha256: String, val size:
     val available: Boolean get() = sha256.isNotEmpty()
     private val tag get() = "pack-$name-${sha256.take(16)}"
     private val urls get() = listOfNotNull(
+        "https://github.com/$FORK_REPO/releases/download/$tag/$name.tar.zst",
         "https://github.com/$REPO/releases/download/$tag/$name.tar.zst",
         BuildConfig.PR_NUMBER.takeIf { it > 0 }?.let { "https://github.com/$PR_REPO/releases/download/pr-$it/$tag.tar.zst" },
     )
@@ -116,6 +117,8 @@ internal class AddonPack(val name: String, private val sha256: String, val size:
     companion object {
         private const val TAG = "AddonPack"
         private const val REPO = "Droid-Deck/DroidDeck-Components"
+        // DroidDeck-Kirin builds its own packs, so their digests are published on the fork.
+        private const val FORK_REPO = "cosminpaulet41-beep/DroidDeck-Kirin"
         private const val PR_REPO = "Droid-Deck/DroidDeck-CI"
         const val COMPLETE = ".complete"
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -28,6 +29,37 @@ public class LinuxVulkanDriverManager {
     public static final String LIB_NAME = "libvulkan_freedreno.so";
     public static final String ICD_NAME = "icd.json";
     public static final String META_NAME = "meta.json";
+    private static final String API_DEFAULT = "1.1.274";
+    // Turnip for Adreno, PanVK/Panfrost for Mali, lavapipe for a GPU with no hardware driver.
+    private static final List<String> LIB_PREFIXES = Collections.unmodifiableList(Arrays.asList(
+            "libvulkan_freedreno", "libvulkan_panvk", "libvulkan_panfrost", "libvulkan_lvp"));
+
+    public static boolean isRuntimeDriverName(String name) {
+        if (name == null || !name.endsWith(".so")) return false;
+        for (String prefix : LIB_PREFIXES) if (name.startsWith(prefix)) return true;
+        return false;
+    }
+
+    static String installedLibraryName(File dir) {
+        if (new File(dir, LIB_NAME).isFile()) return LIB_NAME;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) if (file.isFile() && isRuntimeDriverName(file.getName())) return file.getName();
+        }
+        return null;
+    }
+
+    // The zip's own manifest is dropped (adopt() writes an absolute library_path) but its
+    // api_version is the driver's: PanVK answers 1.4, Turnip 1.1 by default.
+    static String declaredApiVersion(String manifestJson) {
+        try {
+            JSONObject icd = new JSONObject(manifestJson).optJSONObject("ICD");
+            String version = icd == null ? "" : icd.optString("api_version", "");
+            return version.matches("\\d+\\.\\d+(\\.\\d+)?") ? version : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     private final Context context;
     private final File rootDir;
@@ -45,7 +77,7 @@ public class LinuxVulkanDriverManager {
     public boolean isInstalled(String id) {
         if (id == null || id.isEmpty() || id.contains("/") || id.contains("..")) return false;
         File dir = getDriverDir(id);
-        return new File(dir, LIB_NAME).isFile() && new File(dir, ICD_NAME).isFile();
+        return installedLibraryName(dir) != null && new File(dir, ICD_NAME).isFile();
     }
 
     public String getIcdPath(String id) {
@@ -98,6 +130,7 @@ public class LinuxVulkanDriverManager {
         boolean keep = false;
         try {
             String soName = null;
+            String apiVersion = null;
             JSONObject zipMeta = null;
             try (InputStream is = context.getContentResolver().openInputStream(zipUri);
                  ZipInputStream zis = new ZipInputStream(is)) {
@@ -107,12 +140,15 @@ public class LinuxVulkanDriverManager {
                     if (entry.isDirectory()) continue;
                     String base = new File(entry.getName()).getName();
                     if (base.isEmpty()) continue;
-                    if (base.startsWith("libvulkan_freedreno") && base.endsWith(".so")) {
-                        if (soName != null) Log.w(TAG, "zip has several libvulkan_freedreno*.so; using the first (" + soName + ")");
+                    if (isRuntimeDriverName(base)) {
+                        if (soName != null) Log.w(TAG, "zip has several Vulkan drivers; using the first (" + soName + ")");
                         else {
-                            Files.copy(zis, new File(tmpDir, LIB_NAME).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            Files.copy(zis, new File(tmpDir, base).toPath(), StandardCopyOption.REPLACE_EXISTING);
                             soName = base;
                         }
+                    } else if (base.endsWith("_icd.aarch64.json") || base.endsWith("_icd.json")) {
+                        String declared = declaredApiVersion(new String(readAll(zis), StandardCharsets.UTF_8));
+                        if (declared != null) apiVersion = declared;
                     } else if (base.equals(META_NAME)) {
                         try {
                             zipMeta = new JSONObject(new String(readAll(zis), StandardCharsets.UTF_8));
@@ -122,7 +158,7 @@ public class LinuxVulkanDriverManager {
                     }
                 }
             }
-            String id = adopt(tmpDir, soName, zipMeta, displayName);
+            String id = adopt(tmpDir, soName, zipMeta, displayName, apiVersion);
             keep = true;
             return id;
         } finally {
@@ -138,11 +174,15 @@ public class LinuxVulkanDriverManager {
     }
 
     String adopt(File tmpDir, String soName, JSONObject zipMeta, String displayName) throws IOException {
+        return adopt(tmpDir, soName, zipMeta, displayName, null);
+    }
+
+    String adopt(File tmpDir, String soName, JSONObject zipMeta, String displayName, String apiVersion) throws IOException {
         try {
             if (soName == null) {
                 throw new IllegalArgumentException(context.getString(R.string.lvd_no_library));
             }
-            File so = new File(tmpDir, LIB_NAME);
+            File so = new File(tmpDir, soName);
             if (!isAarch64Elf(so)) {
                 throw new IllegalArgumentException(context.getString(R.string.lvd_not_aarch64, soName));
             }
@@ -167,8 +207,8 @@ public class LinuxVulkanDriverManager {
             JSONObject icd = new JSONObject();
             icd.put("file_format_version", "1.0.0");
             JSONObject icdBody = new JSONObject();
-            icdBody.put("library_path", new File(dir, LIB_NAME).getAbsolutePath());
-            icdBody.put("api_version", "1.1.274");
+            icdBody.put("library_path", new File(dir, soName).getAbsolutePath());
+            icdBody.put("api_version", apiVersion != null ? apiVersion : API_DEFAULT);
             icd.put("ICD", icdBody);
             if (!FileUtils.writeString(new File(tmpDir, ICD_NAME), icd.toString(2))) throw new IOException("cannot write icd.json");
 

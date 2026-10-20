@@ -11,6 +11,9 @@ static const char *const EXTENSIONS[] = {
     "VK_EXT_robustness2", "VK_EXT_transform_feedback", "VK_EXT_custom_border_color",
     "VK_KHR_dynamic_rendering", "VK_EXT_extended_dynamic_state3", "VK_EXT_descriptor_indexing",
     "VK_KHR_timeline_semaphore", "VK_EXT_mesh_shader", "VK_KHR_ray_query",
+    "VK_EXT_image_drm_format_modifier", "VK_EXT_external_memory_dma_buf", "VK_KHR_external_memory_fd",
+    "VK_EXT_queue_family_foreign", "VK_KHR_external_semaphore_fd", "VK_EXT_depth_clip_enable",
+    "VK_EXT_vertex_attribute_divisor", "VK_KHR_maintenance5",
 };
 
 static const char *type_name(VkPhysicalDeviceType type) {
@@ -25,7 +28,7 @@ static const char *type_name(VkPhysicalDeviceType type) {
 
 JNIEXPORT jstring JNICALL
 Java_com_droiddeck_launcher_gpu_VulkanInfo_nativeQuery(JNIEnv *env, jclass clazz) {
-    static char out[4096];
+    static char out[8192];
     size_t used = 0;
     out[0] = 0;
     void *lib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);

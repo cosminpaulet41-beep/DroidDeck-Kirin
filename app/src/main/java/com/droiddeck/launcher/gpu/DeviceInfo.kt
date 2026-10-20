@@ -15,8 +15,9 @@ object DeviceInfo {
     fun collect(context: Context): List<Section> {
         val vk = VulkanInfo.query()
         val gpu = GpuInfo.detect()
+        val kb: Map<String, String> = if (gpu.vendor == GpuInfo.Vendor.ADRENO) emptyMap() else KbaseInfo.query()
         return listOf(
-            chip(), gpu(gpu), cpu(), memory(context), system(), vulkan(context, vk), drivers(context, gpu),
+            chip(), gpu(gpu), cpu(), memory(context), system(), vulkan(context, vk), kbase(kb), drivers(context, gpu),
         ).filter { it.rows.isNotEmpty() }
     }
 
@@ -141,6 +142,18 @@ object DeviceInfo {
         hw[PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL]?.let { add("Android hardware level", it.toString()) }
     })
 
+    private fun kbase(k: Map<String, String>) = Section("Mali kernel driver (kbase)", buildList<Pair<String, String>> {
+        if (k.isEmpty()) return@buildList
+        val labels = listOf(
+            "kbase.error" to "Error", "kbase.node" to "Node", "kbase.node_access" to "Node access", "kbase.open" to "Open",
+            "kbase.handshake_error" to "Handshake", "kbase.interface" to "Interface", "kbase.uapi" to "uAPI version",
+            "kbase.context" to "GPU context", "kbase.gpuprops_error" to "GPU properties", "kbase.gpuprops_bytes" to "GPU properties size",
+            "kbase.props" to "GPU properties", "dri" to "/dev/dri", "dma_heap_system" to "/dev/dma_heap/system",
+            "ion" to "/dev/ion", "selinux" to "SELinux context",
+        )
+        for ((key, label) in labels) add(label, k[key])
+    })
+
     private fun drivers(context: Context, gpu: GpuInfo) = Section("Drivers DroidDeck uses", buildList<Pair<String, String>> {
         add("Driver mode", SessionPrefs.gpuDriverMode(context))
         val turnip = TurnipDriver(context)
@@ -148,7 +161,8 @@ object DeviceInfo {
         add("Display driver", "${turnip.displayName(choice)} ${turnip.driverVersion(choice)}".trim())
         val linux = LinuxVulkanDriverManager(context)
         val id = SessionPrefs.linuxDriver(context)
-        add("Game driver", if (id.isEmpty()) "the runtime's own Turnip" else "${linux.getDriverName(id)} ${linux.getDriverVersion(id)}".trim())
+        val builtIn = if (gpu.vendor == GpuInfo.Vendor.ADRENO) "the runtime's own Turnip" else "the runtime's own lavapipe (CPU)"
+        add("Game driver", if (id.isEmpty()) builtIn else "${linux.getDriverName(id)} ${linux.getDriverVersion(id)}".trim())
         if (gpu.oneUi8Gen2) add("Note", "One UI on an 8 Gen 2: needs the OneUI Turnip build")
     })
 }

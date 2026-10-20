@@ -219,7 +219,14 @@ object DeviceReport {
                 if (lm.isInstalled(id)) "" else "  [MISSING - falls back to the runtime's own]"
             k("Linux driver", label)
         }
-        k("Runtime's own ICD", LinuxRuntime.vulkanIcd(context)?.path)
+        k("Runtime's own ICD", LinuxRuntime.vulkanIcd(context)?.path ?: "none picked (the loader tries every manifest)")
+        if (gpu.vendor != com.droiddeck.launcher.gpu.GpuInfo.Vendor.ADRENO) {
+            h("Mali kernel driver (kbase)")
+            for ((key, value) in com.droiddeck.launcher.gpu.KbaseInfo.query()) k(key, value)
+            val vk = com.droiddeck.launcher.gpu.VulkanInfo.query()
+            h("System Vulkan driver")
+            for ((key, value) in vk) k(key, value)
+        }
 
         h("Runtime")
         k("Installed version", LinuxRuntimeInstaller.installedVersion(context))

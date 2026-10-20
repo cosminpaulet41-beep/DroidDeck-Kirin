@@ -708,7 +708,7 @@
     <string name="setup_gpu_unsupported">GPU not supported</string>
     <string name="setup_gpu_detail">%1$s · %2$s</string>
     <string name="setup_gpu_untested_detail">%1$s: %2$s</string>
-    <string name="setup_gpu_unsupported_detail">Steam needs an Adreno driver; %1$s may show a black screen</string>
+    <string name="setup_gpu_unsupported_detail">Steam needs an Adreno or Mali driver; %1$s may show a black screen</string>
     <string name="setup_runtime">Linux runtime</string>
     <string name="setup_runtime_progress">%1$s · %2$d%%</string>
     <string name="setup_runtime_missing">Not installed · about 3 GB, installed on first Play</string>
@@ -1242,8 +1242,8 @@
     <string name="main_wadb_unavailable">Wireless debugging is unavailable</string>
     <string name="main_adb_copied">ADB command copied</string>
     <string name="main_pick_roms">Choose the ROMs folder</string>
-    <string name="main_non_adreno_title">Not an Adreno GPU</string>
-    <string name="main_non_adreno_text">Turnip supports Adreno GPUs. On %1$s, Steam may show a black screen. Download: %2$.0f MB.</string>
+    <string name="main_non_adreno_title">No supported GPU</string>
+    <string name="main_non_adreno_text">No Vulkan driver ships for %1$s. Adreno needs Turnip, Mali needs PanVK or the vendor driver; on any other GPU Steam may show a black screen. Download: %2$.0f MB.</string>
     <string name="main_install_anyway">Install anyway</string>
     <string name="main_remove_runtime_title">Remove Linux runtime</string>
     <string name="main_remove_runtime_text">This deletes the runtime, the Steam client inside it, and every game installed there.</string>
@@ -1298,7 +1298,7 @@
     <string name="drivers_not_checked">Not checked yet - tap refresh to look for new drivers</string>
     <string name="drivers_bundle_sets_display">Android + Linux: sets the display driver with it</string>
     <string name="drivers_bundle_sets_runtime">Android + Linux: sets the runtime driver with it</string>
-    <string name="drivers_runtime_builtin">the Turnip built into the runtime</string>
+    <string name="drivers_runtime_builtin">the driver built into the runtime</string>
     <string name="drivers_system_vulkan">system Vulkan: no bundled build for this GPU</string>
     <string name="drivers_bundled">%1$s (bundled)</string>
     <string name="drivers_manual">Manual</string>
@@ -1322,7 +1322,7 @@
     <string name="drivers_using_restart">Using %1$s %2$s. The display driver applies after DroidDeck restarts.</string>
     <string name="drivers_using_quest">Using the bundled Quest display driver and runtime default.</string>
     <string name="drivers_using_quest_restart">Using the bundled Quest display driver and runtime default. The display driver applies after DroidDeck restarts.</string>
-    <string name="drivers_not_a_driver">Not a driver zip: neither an AdrenoTools driver, a -Linux Turnip nor an Android + Linux bundle</string>
+    <string name="drivers_not_a_driver">Not a driver zip: neither an AdrenoTools driver, a Linux Vulkan driver (Turnip, PanVK or lavapipe) nor an Android + Linux bundle</string>
     <string name="drivers_import_failed">Import failed: %1$s</string>
     <string name="drivers_imported_unnamed">Imported driver</string>
     <string name="drivers_using_bundle">Using %1$s as both the runtime and display driver.</string>
@@ -1849,11 +1849,12 @@
     <string name="look_anime_edge">Anime Edge</string>
     <string name="look_anime_edge_desc">Toon outlines plus sharpening.</string>
 
-    <string name="gpuinfo_not_adreno">Not an Adreno GPU</string>
+    <string name="gpuinfo_not_adreno">Not an Adreno or Mali GPU</string>
     <string name="gpuinfo_supported">Supported</string>
     <string name="gpuinfo_experimental">Experimental: its drivers are test builds</string>
+    <string name="gpuinfo_experimental_mali">Experimental: needs a PanVK or vendor Vulkan driver, not Turnip</string>
     <string name="gpuinfo_below_tested">Below tested hardware (Adreno 725 and newer): it may not run</string>
-    <string name="gpuinfo_unsupported">Not supported: DroidDeck needs an Adreno (Snapdragon) GPU</string>
+    <string name="gpuinfo_unsupported">Not supported: DroidDeck needs an Adreno (Snapdragon) or Mali GPU</string>
 
     <string name="turnip_rate_limited">GitHub\'s rate limit was hit - try again later</string>
     <string name="turnip_github_http">GitHub answered HTTP %1$d</string>
@@ -1869,7 +1870,7 @@
     <string name="turnip_reject_library_missing">meta.json names %1$s, which is not in the zip</string>
     <string name="turnip_reject_not_aarch64">%1$s is not a 64-bit AArch64 ELF shared library</string>
     <string name="turnip_reject_glibc">%1$s links glibc - a \"-Linux\" Turnip, which belongs under \"Linux runtime driver\"</string>
-    <string name="lvd_no_library">No libvulkan_freedreno*.so in this zip. An Android (AdrenoTools) or -Wayland Turnip zip is not a Linux runtime driver.</string>
+    <string name="lvd_no_library">No Linux Vulkan driver in this zip. Expected libvulkan_freedreno*.so, libvulkan_panvk*.so or libvulkan_lvp*.so; an Android (AdrenoTools) or -Wayland zip is not a Linux runtime driver.</string>
     <string name="lvd_not_aarch64">%1$s is not a 64-bit AArch64 ELF shared library.</string>
     <string name="lvd_not_glibc">%1$s is not a glibc driver - it links Android\'s libc. The Linux runtime needs a \"-Linux\" zip; a plain or \"-Wayland\" Turnip cannot be loaded by the Steam client at all.</string>
     <string name="bundle_no_manifest">Not a driver bundle: no manifest.json naming an android and a linux driver</string>

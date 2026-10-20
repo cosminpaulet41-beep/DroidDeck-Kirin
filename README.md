@@ -5,6 +5,16 @@
   </picture>
 </p>
 
+## DroidDeck-Kirin
+
+**🇷🇴** DroidDeck-Kirin este o versiune a DroidDeck adaptată pentru telefoanele cu procesor Kirin și placă video Mali (dezvoltată pe un Huawei nova 13 cu Kirin 8000 / Mali-G610). Aplicația recunoaște placa Mali, afișează imaginea prin driverul Vulkan al telefonului și acceptă drivere Linux PanVK. Suportul pentru jocuri 3D e experimental și în lucru. Versiunile de test sunt la [Releases](https://github.com/cosminpaulet41-beep/DroidDeck-Kirin/releases) și se instalează peste DroidDeck.
+
+**🇬🇧** DroidDeck-Kirin is a DroidDeck fork for phones with a Kirin chip and a Mali GPU (developed on a Huawei nova 13 with a Kirin 8000 / Mali-G610). The app recognises the Mali GPU, presents through the phone's own Vulkan driver and accepts PanVK Linux runtime drivers. 3D game support is experimental and in progress. Test builds are in [Releases](https://github.com/cosminpaulet41-beep/DroidDeck-Kirin/releases) and install over DroidDeck.
+
+Fork by **Hunys with Claude AI**, open source under GPL-3.0 like the original. Mali recognition builds on SPLATPLAYS's [mali-panvk-support](https://github.com/SPLATPLAYS/DroidDeck/tree/mali-panvk-support) work. Everything else is the work of the [DroidDeck](https://github.com/Droid-Deck/DroidDeck) authors.
+
+---
+
 DroidDeck brings the SteamOS experience to Android: Valve's Steam client in Big Picture on your Adreno handheld, with Windows games through Valve's ARM64 Proton.
 
 <p align="center"><a href="https://discord.gg/JRGAvawjsm"><img src="https://img.shields.io/badge/Discord-Join%20the%20community-5865F2?logo=discord&logoColor=white" alt="Join the DroidDeck Discord"></a></p>

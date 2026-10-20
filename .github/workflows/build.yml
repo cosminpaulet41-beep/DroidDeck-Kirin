@@ -90,7 +90,7 @@ jobs:
     name: Build APK
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: ${{ github.repository == 'Droid-Deck/DroidDeck' && 45 || 120 }}
     outputs:
       variants: ${{ steps.variants.outputs.list }}
     steps:
@@ -745,7 +745,7 @@ jobs:
 
   sign:
     needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Droid-Deck/DroidDeck' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       actions: read
@@ -757,7 +757,7 @@ jobs:
 
   packs:
     needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Droid-Deck/DroidDeck' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       actions: read
@@ -766,7 +766,7 @@ jobs:
 
   announce:
     needs: [build, sign, packs]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Droid-Deck/DroidDeck' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -886,6 +886,58 @@ jobs:
           jq -n --arg content "$content" '{content: $content, allowed_mentions: {parse: []}}' |
             curl -fsS -H 'Content-Type: application/json' -d @- "$WEBHOOK" -o /dev/null
           echo "Posted: $content"
+
+  # A fork has none of the signing keys, app tokens or the CI repo; it publishes the testkey APK and
+  # its own add-on packs as releases of the fork instead (AddonPack looks there first).
+  fork-release:
+    needs: build
+    if: github.repository != 'Droid-Deck/DroidDeck' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: droiddeck-apk
+          path: apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: droiddeck-packs
+          path: packs
+      - name: Publish the packs and the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for file in packs/*.tar.zst; do
+            name=$(basename "$file" .tar.zst)
+            sha=$(sha256sum "$file" | cut -d' ' -f1)
+            tag="pack-$name-${sha:0:16}"
+            if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "$tag already published"
+              continue
+            fi
+            gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "$tag" --notes "Add-on pack \`$name\` (SHA-256 $sha), downloaded by the app on first use." "$file"
+          done
+          short=${GITHUB_SHA::7}
+          tag="kirin-${GITHUB_RUN_NUMBER}-$short"
+          apk=$(find apk -name '*.apk' | head -1)
+          out="DroidDeck-Kirin-$short.apk"
+          cp "$apk" "$out"
+          subject=$(git -c safe.directory='*' log -1 --format=%s "$GITHUB_SHA" 2>/dev/null || gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
+          notes="**$subject**
+
+          🇷🇴 Versiune de test DroidDeck pentru Kirin / Mali. Descarcă **$out** de mai jos și instaleaz-o peste DroidDeck (datele rămân).
+          🇬🇧 DroidDeck test build for Kirin / Mali. Download **$out** below and install it over DroidDeck (your data stays).
+
+          Commit: $GITHUB_SHA · SHA-256: \`$(sha256sum "$out" | cut -d' ' -f1)\`
+
+          DroidDeck-Kirin by Hunys with Claude AI, based on [DroidDeck](https://github.com/Droid-Deck/DroidDeck) (GPL-3.0)."
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "DroidDeck-Kirin $short" --notes "$notes" "$out"
+          echo "Published $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag" >> "$GITHUB_STEP_SUMMARY"
 
   catalog:
     needs: announce

@@ -93,6 +93,15 @@ public final class LinuxRuntime {
         File icdDir = new File(rootDir(context), "usr/share/vulkan/icd.d");
         File[] manifests = icdDir.listFiles((dir, name) -> name.endsWith(".json"));
         if (manifests == null) return null;
+        if (!com.droiddeck.launcher.gpu.GpuInfo.adrenoPresent()) {
+            // Turnip cannot open a GPU without KGSL, and the stock PanVK needs a DRM node Android
+            // does not give apps; without an imported driver a non-Adreno draws on lavapipe, or the
+            // loader is left to try every manifest.
+            for (File manifest : manifests) {
+                if (manifest.getName().startsWith("lvp")) return manifest;
+            }
+            return null;
+        }
         for (File manifest : manifests) {
             if (manifest.getName().contains("freedreno")) return manifest;
         }

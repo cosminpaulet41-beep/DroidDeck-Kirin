@@ -61,9 +61,22 @@ class GpuDetectionTest {
         assertEquals("Supported", info(true, 830).supportText)
         assertEquals("Experimental: its drivers are test builds", info(true, 720).supportText)
         assertEquals("Outside tested hardware (Adreno 650, 725 and newer): it may not run", info(true, 618).supportText)
-        assertEquals("Not supported: DroidDeck needs an Adreno (Snapdragon) GPU", info(false, 0).supportText)
-        assertEquals("Not an Adreno GPU", Family.NOT_ADRENO.label)
+        assertEquals("Not supported: DroidDeck needs an Adreno (Snapdragon) or Mali GPU", info(false, 0).supportText)
+        assertEquals("Not an Adreno or Mali GPU", Family.NOT_ADRENO.label)
         assertEquals("Adreno 8xx", Family.A8XX.label)
+    }
+
+    @Test fun aMaliIsItsOwnExperimentalFamily() {
+        val mali = GpuInfo(name = "Mali-G610", model = 0, family = GpuInfo.familyOf(GpuInfo.Vendor.MALI, 0), soc = "Kirin 8000", oneUi8Gen2 = false)
+        assertEquals(Family.MALI, mali.family)
+        assertEquals(GpuInfo.Vendor.MALI, mali.vendor)
+        assertEquals(Support.UNTESTED, mali.support)
+        assertEquals("Experimental: needs a PanVK or vendor Vulkan driver, not Turnip", mali.supportText)
+        assertEquals(Family.NOT_ADRENO, GpuInfo.familyOf(GpuInfo.Vendor.UNKNOWN, 0))
+        assertEquals(Family.A7XX, GpuInfo.familyOf(GpuInfo.Vendor.ADRENO, 740))
+        assertEquals("Mali-G610 MC4", GpuInfo.maliName(" Mali-G610 MC4 "))
+        assertEquals("Mali", GpuInfo.maliName(null))
+        assertEquals("Mali", GpuInfo.maliName("Maleoon 910"))
     }
 
     @Test fun platformCodeNamesIncludingCaseAndUnknowns() {

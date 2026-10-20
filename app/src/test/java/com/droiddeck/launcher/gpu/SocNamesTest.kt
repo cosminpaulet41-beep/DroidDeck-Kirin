@@ -16,9 +16,20 @@ class SocNamesTest {
     @Test fun knownModelsAndPlatformsGetTheirNames() {
         assertEquals("Snapdragon 8 Gen 2", SocNames.name("QCS8550", ""))
         assertEquals("Snapdragon 8 Gen 3 family", SocNames.name("SG8350P", "pineapple"))
-        assertNull(SocNames.name("XYZ123", "nowhere"))
+        assertNull(SocNames.name("XYZ123", "nowhere", ""))
         assertEquals("Snapdragon 8 Gen 2 (QCS8550)", SocNames.label("QCS8550", ""))
         assertEquals("Snapdragon 8 Gen 3 family (SG8350P)", SocNames.label("SG8350P", "pineapple"))
-        assertEquals("XYZ123", SocNames.label("XYZ123", ""))
+        assertEquals("XYZ123", SocNames.label("XYZ123", "", ""))
+    }
+
+    @Test fun hisiliconKirinIsNamedFromTheHardwareName() {
+        assertEquals("Kirin 8000", SocNames.kirin("kirin8000"))
+        assertEquals("Kirin 9000S", SocNames.kirin("Kirin9000s"))
+        assertEquals("Kirin 990", SocNames.kirin("hi kirin 990"))
+        assertNull(SocNames.kirin("Kirin"))
+        assertNull(SocNames.kirin("qcom"))
+        assertEquals("Kirin 8000", SocNames.name("Kirin", "", "kirin8000"))
+        assertEquals("Kirin 8000", SocNames.label("Kirin", "", "kirin8000"))
+        assertEquals("Kirin 8000", SocNames.label("", "", "Kirin8000"))
     }
 }

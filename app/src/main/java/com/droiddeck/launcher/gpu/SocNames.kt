@@ -18,6 +18,8 @@ object SocNames {
         "pineapple" to "Snapdragon 8 Gen 3", "sun" to "Snapdragon 8 Elite",
     )
 
+    private val KIRIN = Regex("""(?i)^\s*(?:hi\s*|hisilicon\s*)?kirin\s*(\d{3,4}[a-z]*)\s*$""")
+
     fun model(prop: (String) -> String = GpuInfo::systemProperty): String {
         val sdk = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MODEL.takeIf { it != Build.UNKNOWN }.orEmpty() else ""
         return listOf(prop("ro.soc.model"), prop("ro.vendor.qti.soc_model"), sdk, prop("ro.fota.platform"))
@@ -25,13 +27,19 @@ object SocNames {
             .firstOrNull { it.isNotEmpty() && !Regex("(?i)^msm_\\d").containsMatchIn(it) }.orEmpty()
     }
 
-    fun name(model: String, platform: String = GpuInfo.systemProperty("ro.board.platform")): String? =
-        MODELS[model.uppercase()] ?: PLATFORMS[platform.lowercase()]?.let { "$it family" }
+    // HiSilicon reports the chip as the hardware name ("kirin8000") and the SoC model as "Kirin".
+    fun kirin(hardware: String): String? =
+        KIRIN.find(hardware)?.groupValues?.get(1)?.let { "Kirin ${it.uppercase()}" }
 
-    fun label(model: String = model(), platform: String = GpuInfo.systemProperty("ro.board.platform")): String {
-        val name = name(model, platform)
+    fun name(model: String, platform: String = GpuInfo.systemProperty("ro.board.platform"), hardware: String = Build.HARDWARE.orEmpty()): String? =
+        MODELS[model.uppercase()]
+            ?: PLATFORMS[platform.lowercase()]?.let { "$it family" }
+            ?: kirin(model) ?: kirin(platform) ?: kirin(hardware)
+
+    fun label(model: String = model(), platform: String = GpuInfo.systemProperty("ro.board.platform"), hardware: String = Build.HARDWARE.orEmpty()): String {
+        val name = name(model, platform, hardware)
         return when {
-            name != null && model.isNotEmpty() -> "$name ($model)"
+            name != null && model.isNotEmpty() && !name.equals(model, ignoreCase = true) && !name.startsWith(model, ignoreCase = true) -> "$name ($model)"
             name != null -> name
             else -> model
         }
