@@ -1,0 +1,84 @@
+gamescope: do not reject a Vulkan device that exposes no DRM nodes
+
+A driver may implement VK_EXT_physical_device_drm and still report
+hasPrimary == false and hasRender == false: that is what a GPU reached through
+a proprietary kernel driver rather than DRM does. PanVK over kbase on a Tensor
+phone is the case at hand - mali_kbase registers /dev/mali0 as a miscellaneous
+char device and owns no DRM node at all, and its driver leaves
+drm.{render,primary}_rdev unset (see the comment in its 004-physical-device-kbase
+patch).
+
+gamescope already runs a Vulkan device with no DRM fd: a driver that does not
+implement the extension at all takes the branch above, warns, and leaves
+m_drmRendererFd unset. A driver that implements it and reports empty fields was
+rejected instead, which is the inconsistency this removes. Warn and carry on, and
+only refuse when the driver names a node it then fails to open.
+
+Nothing downstream needs the fd here: gamescope's Vulkan renderer allocates with
+vkAllocateMemory and takes no wlr_allocator, and CTimeline - the one remaining
+consumer through drmSyncobjFDToHandle - is only built from steamcompmgr.cpp.
+
+Not yet device-tested: PanVK over kbase reaches gamescope's device selection on a
+Pixel 8 Pro (Mali-G715 MC7), but this binary has not been built or run there.
+The Adreno path is unchanged, since it reports both nodes.
+
+--- a/src/rendervulkan.cpp
++++ b/src/rendervulkan.cpp
+@@ -478,33 +478,32 @@
+ 		};
+ 		vk.GetPhysicalDeviceProperties2( physDev(), &props2 );
+ 
+-		if ( !GetBackend()->UsesVulkanSwapchain() && !drmProps.hasPrimary ) {
+-			vk_log.errorf( "physical device has no primary node" );
+-			return false;
+-		}
+-		if ( !drmProps.hasRender ) {
+-			vk_log.errorf( "physical device has no render node" );
+-			return false;
+-		}
++		// A driver may implement VK_EXT_physical_device_drm and still expose no nodes at
++		// all: a GPU reached through a proprietary kernel driver rather than DRM, such as
++		// Mali over kbase on a Tensor phone. Such a device still composites and allocates
++		// through Vulkan, so treat it the way a driver without the extension is treated
++		// above - warn, leave m_drmRendererFd unset, carry on. Only refuse when the driver
++		// names a node it then fails to open.
++		if ( !drmProps.hasPrimary || !drmProps.hasRender ) {
++			vk_log.warnf( "physical device exposes no DRM nodes; continuing without one" );
++		} else {
++			dev_t renderDevId = makedev( drmProps.renderMajor, drmProps.renderMinor );
++			drmDevice *drmDev = nullptr;
++			if ( drmGetDeviceFromDevId(renderDevId, 0, &drmDev) != 0 ) {
++				vk_log.errorf( "drmGetDeviceFromDevId() failed" );
++				return false;
++			}
++			assert(drmDev->available_nodes & (1 << DRM_NODE_RENDER));
++			const char *drmRenderName = drmDev->nodes[DRM_NODE_RENDER];
+ 
+-		dev_t renderDevId = makedev( drmProps.renderMajor, drmProps.renderMinor );
+-		drmDevice *drmDev = nullptr;
+-		if (drmGetDeviceFromDevId(renderDevId, 0, &drmDev) != 0) {
+-			vk_log.errorf( "drmGetDeviceFromDevId() failed" );
+-			return false;
+-		}
+-		assert(drmDev->available_nodes & (1 << DRM_NODE_RENDER));
+-		const char *drmRenderName = drmDev->nodes[DRM_NODE_RENDER];
+-
+-		m_drmRendererFd = open( drmRenderName, O_RDWR | O_CLOEXEC );
+-		drmFreeDevice(&drmDev);
+-		if ( m_drmRendererFd < 0 ) {
+-			vk_log.errorf_errno( "failed to open DRM render node" );
+-			return false;
+-		}
++			m_drmRendererFd = open( drmRenderName, O_RDWR | O_CLOEXEC );
++			drmFreeDevice(&drmDev);
++			if ( m_drmRendererFd < 0 ) {
++				vk_log.errorf_errno( "failed to open DRM render node" );
++				return false;
++			}
+ 
+-		if ( drmProps.hasPrimary ) {
+-			m_bHasDrmPrimaryDevId = true;
++			m_bHasDrmPrimaryDevId = drmProps.hasPrimary;
+ 			m_drmPrimaryDevId = makedev( drmProps.primaryMajor, drmProps.primaryMinor );
+ 		}
+ #else
