@@ -1,0 +1,49 @@
+name: Build PanVK-kbase (Kirin)
+
+on:
+  push:
+    paths:
+      - 'tools/panvk/**'
+      - '.github/workflows/build-panvk.yml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish as (e.g. panvk-kirin-1); empty = artifact only'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.repository != 'Droid-Deck/DroidDeck'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build in Arch Linux ARM
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/work" -w /work menci/archlinuxarm:base-devel bash tools/panvk/build-in-arch.sh
+          sudo chown -R "$(id -u):$(id -g)" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panvk-kirin
+          path: panvk-kirin.zip
+      - name: Publish
+        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          . tools/panvk/release.env
+          notes="PanVK-kbase (glibc) for the DroidDeck-Kirin Linux runtime: $PANVK_REPO at $PANVK_BASE ($PANVK_COMMIT), plus an ION fallback for kernels without /dev/dma_heap (Huawei Kirin). Mesa is MIT-licensed; see the upstream project for its own terms.
+
+          Import: Components > GPU drivers > Mix and match > Import .zip, then Change runtime driver.
+          Importă: Components > GPU drivers > Mix and match > Import .zip, apoi Change runtime driver.
+
+          SHA-256: $(sha256sum panvk-kirin.zip | cut -d' ' -f1)"
+          gh release create "$TAG" --prerelease --latest=false --title "$TAG" --notes "$notes" panvk-kirin.zip \
+            || gh release upload "$TAG" panvk-kirin.zip --clobber
