@@ -784,6 +784,19 @@ BUSCONF
     _bl_ui=(-gamepadui)
     [ "${BL_STEAM_UI:-}" = desktop ] && _bl_ui=()
     _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=vulkan)
+    # On a Mali (PanVK over kbase) ANGLE's Vulkan backend loses Steam's web helper: its X
+    # connection dies ("Fatal IO error 11") within seconds of the first frame. ANGLE over GL
+    # (Zink on the same PanVK) is the path that got through on a Mali-G715; BL_CEF_MODE picks.
+    _bl_cef_fallback=
+    if [ "${BL_GPU_VENDOR:-}" = mali ]; then
+      case ${BL_CEF_MODE:-gl} in
+        vulkan) ;;
+        off|cpu) _bl_cef=(-cef-disable-gpu) ;;
+        *) _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl) ;;
+      esac
+      [ "${_bl_cef[0]}" = -cef-disable-gpu ] || _bl_cef_fallback=1
+      echo "== steam: Mali GPU, Steam's browser draws with ${_bl_cef[*]}"
+    fi
     [ "${steam_cef_gpu:-1}" = 1 ] || _bl_cef=(-cef-disable-gpu)
     if [ "${BL_DESKTOP:-}" = 1 ] && [ "${BL_STEAM_UI:-}" = desktop ]; then
       _bl_cef=(-cef-disable-gpu)
@@ -1171,6 +1184,13 @@ BUSCONF
         echo "== steam: Shut Down from the power menu; ending the session"
         rc=0
         break
+      fi
+      if [ -n "${_bl_cef_fallback:-}" ] && [ "$rc" != 42 ] && [ "$steam_ran" -lt 90 ]; then
+        _bl_cef_fallback=
+        _bl_cef=(-cef-disable-gpu)
+        echo "== steam: the client ended after ${steam_ran}s on a Mali; starting it again with its browser on the CPU (${_bl_cef[*]})"
+        set --
+        continue
       fi
       if [ -e "$STEAMOS_STEAM_REBOOT_SENTINEL" ]; then
         rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL"

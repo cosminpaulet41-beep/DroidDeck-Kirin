@@ -462,7 +462,10 @@ internal class DriverMenus(private val activity: Activity, private val ui: Handl
 
     fun refreshReleaseRows() {
         val check = TurnipReleases.cached(activity)
+        // Every listed release is a Turnip build, which only opens an Adreno.
+        val turnipFits = com.droiddeck.launcher.core.DeviceSupport.adreno()
         fun rows(linux: Boolean) = check?.assets.orEmpty()
+            .filter { turnipFits }
             .filter { it.bundle || it.linux == linux }
             .filter { a -> installedIdOf(a) == null }
             .map { a ->
