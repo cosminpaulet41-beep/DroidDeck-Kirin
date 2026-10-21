@@ -48,7 +48,7 @@ strings "$OUT/libvulkan_panfrost.so" | grep -q 'no dma-heap, using ION heap mask
 python - "$OUT" "$MIN_GLIBC" <<'PY'
 import json, os, sys, hashlib
 out, glibc = sys.argv[1], sys.argv[2]
-env = dict(l.strip().split('=', 1) for l in open('tools/panvk/release.env') if '=' in l)
+env = {k: v.strip('"') for k, v in (l.strip().split('=', 1) for l in open('tools/panvk/release.env') if '=' in l)}
 so = os.path.join(out, 'libvulkan_panfrost.so')
 json.dump({
     "schemaVersion": 1,
