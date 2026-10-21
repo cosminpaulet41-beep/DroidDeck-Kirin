@@ -44,7 +44,7 @@ strip --strip-unneeded "$OUT/libvulkan_panfrost.so"
 cp "$(find "$B/build" -name 'panfrost_icd.*.json' | head -1)" "$OUT/panfrost_icd.aarch64.json"
 readelf -d "$OUT/libvulkan_panfrost.so" | grep NEEDED
 MIN_GLIBC=$(readelf -V "$OUT/libvulkan_panfrost.so" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -V | tail -1)
-strings "$OUT/libvulkan_panfrost.so" | grep -q 'no dma-heap, using ION heap mask'
+test "$(strings "$OUT/libvulkan_panfrost.so" | grep -c 'no dma-heap, using ION heap mask')" -ge 1
 python - "$OUT" "$MIN_GLIBC" <<'PY'
 import json, os, sys, hashlib
 out, glibc = sys.argv[1], sys.argv[2]
