@@ -139,8 +139,9 @@ class DesktopSteamLaunchTest(unittest.TestCase):
     def test_mali_draws_steams_browser_through_gl_unless_told_otherwise(self):
         source = (BIN / 'droiddeck-session').read_text()
         setup = source[source.index('    _bl_ui=(-gamepadui)'):source.index('    if [ "${BL_STEAM_UI:-}" != desktop ]; then')]
-        for vendor, mode, want in [('mali', '', '-cef-use-angle=gl'), ('mali', 'off', '-cef-disable-gpu'),
-                                   ('mali', 'vulkan', '-cef-use-angle=vulkan'), ('adreno', '', '-cef-use-angle=vulkan')]:
+        for vendor, mode, want in [('mali', '', '-cef-use-angle=gl'), ('mali', 'gl', '-cef-use-angle=gl'),
+                                   ('mali', 'off', '-cef-disable-gpu'), ('mali', 'vulkan', '-cef-use-angle=vulkan'),
+                                   ('adreno', '', '-cef-use-angle=vulkan')]:
             with self.subTest(vendor=vendor, mode=mode):
                 env = dict(self.env, BL_DESKTOP='', BL_STEAM_UI='', BL_GPU_VENDOR=vendor, BL_CEF_MODE=mode)
                 result = subprocess.check_output(['bash', '-c', setup + '\nprintf "%s\\n" "${_bl_cef[@]}"'],
