@@ -103,6 +103,22 @@ object PhantomProcessLimit {
     fun blocksSteam(status: PhantomProcessStatus): Boolean =
         status != PhantomProcessStatus.NOT_APPLICABLE && status != PhantomProcessStatus.DISABLED
 
+    private const val PREF_START_ANYWAY = "start-anyway"
+
+    // Only a limit the app could not read may be skipped; one Android reports as on stays a gate.
+    fun canStartAnyway(status: PhantomProcessStatus): Boolean =
+        status == PhantomProcessStatus.UNREADABLE || status == PhantomProcessStatus.UNSET
+
+    fun startAnyway(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(PREF_START_ANYWAY, false)
+
+    fun setStartAnyway(context: Context, on: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(PREF_START_ANYWAY, on).apply()
+    }
+
+    fun gatesSteam(context: Context, status: PhantomProcessStatus): Boolean =
+        blocksSteam(status) && !(canStartAnyway(status) && startAnyway(context))
+
     fun title(context: Context, status: PhantomProcessStatus): String = context.getString(when (status) {
         PhantomProcessStatus.ENABLED -> R.string.phantom_title_on
         PhantomProcessStatus.UNSET -> R.string.phantom_title_unset

@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
     private var phantomWarning by mutableStateOf<String?>(null)
     private var phantomProcessStatus by mutableStateOf(PhantomProcessStatus.NOT_APPLICABLE)
     private var showPhantomGate by mutableStateOf(false)
+    private var pendingPhantomStart: Intent? = null
     private var directAudio by mutableStateOf(false)
     private var picturePosition by mutableStateOf("center")
     private var stretch16x9 by mutableStateOf(false)
@@ -1068,7 +1069,12 @@ class MainActivity : ComponentActivity() {
                             )
                             android.widget.Toast.makeText(this, R.string.main_adb_copied, android.widget.Toast.LENGTH_SHORT).show()
                         },
-                        onDismissPhantomGate = { showPhantomGate = false },
+                        onDismissPhantomGate = { showPhantomGate = false; pendingPhantomStart = null },
+                        onStartAnywayPhantomGate = {
+                            PhantomProcessLimit.setStartAnyway(this, true)
+                            showPhantomGate = false
+                            pendingPhantomStart?.let { pending -> pendingPhantomStart = null; startSession(pending, steamSession = true) }
+                        },
                         onStartWirelessAdbPairing = { WirelessAdbPairingService.start(this) },
                         onOpenNotificationSettings = {
                             startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -2032,7 +2038,8 @@ class MainActivity : ComponentActivity() {
             return false
         }
         refreshPhantomStatus()
-        if (steamSession && PhantomProcessLimit.blocksSteam(phantomProcessStatus)) {
+        if (steamSession && PhantomProcessLimit.gatesSteam(this, phantomProcessStatus)) {
+            pendingPhantomStart = intent
             showPhantomGate = true
             return false
         }

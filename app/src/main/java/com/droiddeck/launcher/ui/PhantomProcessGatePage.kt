@@ -50,6 +50,7 @@ fun PhantomProcessGatePage(
     onEnterAddressManually: () -> Unit,
     onCopyCommand: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onStartAnyway: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onDismiss)
     val context = LocalContext.current
@@ -82,6 +83,7 @@ fun PhantomProcessGatePage(
                 val side: @Composable ColumnScope.() -> Unit = {
                     StatusGroup(status, compact)
                     OtherWays(hasToggle, compact, onOpenDeveloperOptions, onFixWithWirelessDebugging, onEnterAddressManually, onCopyCommand)
+                    if (onStartAnyway != null && PhantomProcessLimit.canStartAnyway(status)) StartAnyway(compact, onStartAnyway)
                 }
                 if (wide) {
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.widthIn(max = 900.dp).fillMaxWidth()) {
@@ -245,6 +247,21 @@ private fun OtherWays(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SecondaryButton(stringResource(R.string.gate_copy_command), compact = true, onClick = onCopyCommand)
+        }
+    }
+}
+
+// Some ROMs (Huawei EMUI on Android 12) have neither the developer switch nor Wireless debugging,
+// so the limit can only be read and changed from a computer.
+@Composable
+private fun StartAnyway(compact: Boolean, onStartAnyway: () -> Unit) {
+    SettingsGroup(stringResource(R.string.gate_start_anyway_title), compact = compact) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(if (compact) 10.dp else 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Body(stringResource(R.string.gate_start_anyway_body), warn = true)
+            SecondaryButton(stringResource(R.string.gate_start_anyway), compact = compact, onClick = onStartAnyway)
         }
     }
 }

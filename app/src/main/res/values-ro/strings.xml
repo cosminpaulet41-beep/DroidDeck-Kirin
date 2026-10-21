@@ -908,6 +908,9 @@
     <string name="gate_enter_manually">Introdu adresa manual</string>
     <string name="gate_from_computer">De pe un computer cu ADB:</string>
     <string name="gate_copy_command">Copiază comanda</string>
+    <string name="gate_start_anyway_title">Pornește fără să o schimbi</string>
+    <string name="gate_start_anyway_body">Doar dacă nu ai nici Depanare wireless, nici un calculator. Android poate închide atunci Steam sau un joc fără avertisment când sesiunea rulează prea multe procese.</string>
+    <string name="gate_start_anyway">Pornește oricum</string>
     <string name="gate_choose_display">Alege pe care afișaj se deschid Setările Android.</string>
     <string name="gate_main_screen">Ecranul principal</string>
     <string name="wadb_finding_port">Asociat. Se caută portul de Depanare wireless…</string>

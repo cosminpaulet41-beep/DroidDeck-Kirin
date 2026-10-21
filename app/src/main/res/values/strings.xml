@@ -933,6 +933,9 @@
     <string name="gate_enter_manually">Enter address manually</string>
     <string name="gate_from_computer">From a computer with ADB:</string>
     <string name="gate_copy_command">Copy command</string>
+    <string name="gate_start_anyway_title">Start without changing it</string>
+    <string name="gate_start_anyway_body">Only when neither Wireless debugging nor a computer is available. Android may then close Steam or a game without warning when the session runs too many processes.</string>
+    <string name="gate_start_anyway">Start anyway</string>
     <string name="gate_choose_display">Choose which display to open Android Settings on.</string>
     <string name="gate_main_screen">Main screen</string>
     <string name="wadb_finding_port">Paired. Finding the Wireless debugging port…</string>
