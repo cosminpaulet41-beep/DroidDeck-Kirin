@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 # Builds the glibc PanVK-kbase Vulkan driver for the Linux runtime (Arch Linux ARM, as the
-# runtime is) from panvk-kbase-android at a pinned commit, plus tools/panvk/ion_fallback.py.
+# runtime is) from panvk-kbase-android at a pinned commit, plus tools/panvk/kirin_kbase.py.
 # Output: panvk-kirin.zip (libvulkan_panfrost.so, panfrost_icd.aarch64.json, meta.json),
 # importable under Components > GPU drivers > Import .zip.
 set -euxo pipefail
@@ -28,7 +28,7 @@ git -C "$B/mesa" checkout -q --detach FETCH_HEAD
 test "$(git -C "$B/mesa" rev-parse HEAD)" = "$MESA_COMMIT"
 
 sh "$B/src/scripts/apply-patches.sh" --profile "$PANVK_PROFILE" --mesa "$B/mesa"
-python tools/panvk/ion_fallback.py "$B/mesa/src/panfrost/lib/kmod/kbase_kmod.c"
+python tools/panvk/kirin_kbase.py "$B/mesa/src/panfrost/lib/kmod/kbase_kmod.c"
 
 meson setup "$B/build" "$B/mesa" \
   --native-file "$B/src/meson/linux-aarch64-native.ini" \
@@ -59,7 +59,7 @@ json.dump({
     "minGlibc": glibc,
     "abi": "linux-aarch64-glibc",
     "backend": "panvk-kbase",
-    "source": env["PANVK_REPO"] + "@" + env["PANVK_COMMIT"] + " + DroidDeck-Kirin tools/panvk/ion_fallback.py",
+    "source": env["PANVK_REPO"] + "@" + env["PANVK_COMMIT"] + " + DroidDeck-Kirin tools/panvk/kirin_kbase.py",
     "sha256": hashlib.sha256(open(so, 'rb').read()).hexdigest(),
 }, open(os.path.join(out, 'meta.json'), 'w'), indent=2)
 PY

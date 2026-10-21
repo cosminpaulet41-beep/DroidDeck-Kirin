@@ -34,7 +34,7 @@ jobs:
             echo "::error title=panvk build::$msg"
             exit "$status"
           fi
-          grep -E 'NEEDED|minGlibc|ion_fallback' build.log | sed 's/^/::notice::/' || true
+          grep -E 'NEEDED|minGlibc|kirin_kbase' build.log | sed 's/^/::notice::/' || true
       - uses: actions/upload-artifact@v4
         with:
           name: panvk-kirin
