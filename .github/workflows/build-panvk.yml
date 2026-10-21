@@ -25,12 +25,22 @@ jobs:
       - name: Build in Arch Linux ARM
         run: |
           set -euo pipefail
-          docker run --rm -v "$PWD:/work" -w /work menci/archlinuxarm:base-devel bash tools/panvk/build-in-arch.sh
+          status=0
+          docker run --rm -v "$PWD:/work" -w /work menci/archlinuxarm:base-devel bash tools/panvk/build-in-arch.sh > build.log 2>&1 || status=$?
           sudo chown -R "$(id -u):$(id -g)" .
+          tail -n 400 build.log
+          if [ "$status" != 0 ]; then
+            msg=$( { grep -nE 'error|Error|ERROR|PATCH-DRIFT|anchor not found|not found|FAILED' build.log | tail -40; echo '--- tail ---'; tail -n 30 build.log; } | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::error title=panvk build::$msg"
+            exit "$status"
+          fi
+          grep -E 'NEEDED|minGlibc|ion_fallback' build.log | sed 's/^/::notice::/' || true
       - uses: actions/upload-artifact@v4
         with:
           name: panvk-kirin
-          path: panvk-kirin.zip
+          path: |
+            panvk-kirin.zip
+            build.log
       - name: Publish
         if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
         env:
