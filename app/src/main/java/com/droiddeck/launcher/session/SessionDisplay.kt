@@ -9,7 +9,8 @@ object SessionDisplay {
     const val FOLLOW_MIN_SIDE = 480
 
     const val DEFAULT_RESOLUTION = "720p"
-    private val PRESET_HEIGHTS = listOf(720, 900, 1080)
+    // The lower heights are for a session whose Steam interface the processor draws (a Mali phone).
+    private val PRESET_HEIGHTS = listOf(480, 540, 600, 720, 900, 1080)
 
     fun presetHeight(choice: String): Int? =
         if (choice.endsWith("p")) choice.dropLast(1).toIntOrNull()?.takeIf { it > 0 } else null

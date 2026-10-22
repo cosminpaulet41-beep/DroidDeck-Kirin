@@ -19,17 +19,21 @@ class SessionDisplayTest {
         assertEquals(1280 to 720, SessionDisplay.resolveChoice(2208 to 1840, "720p"))
         assertEquals(1280 to 720, SessionDisplay.resolveChoice(1440 to 1080, "720p"))
         assertEquals(1280 to 720, SessionDisplay.resolveChoice(1280 to 720, "1080p"))
+        assertEquals(1068 to 480, SessionDisplay.resolveChoice(2412 to 1084, "480p"))
+        assertEquals(1200 to 540, SessionDisplay.resolveChoice(2412 to 1084, "540p"))
+        assertEquals(1334 to 600, SessionDisplay.resolveChoice(2412 to 1084, "600p"))
     }
 
     @Test fun optionsListTheHeightsThePanelCanShowThenThePanel() {
+        val low = listOf("480p", "540p", "600p")
         val thor = SessionDisplay.resolutionOptions(1920 to 1080)
-        assertEquals(listOf("720p", "900p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN), thor)
-        assertEquals(listOf("720p", "900p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN),
+        assertEquals(low + listOf("720p", "900p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN), thor)
+        assertEquals(low + listOf("720p", "900p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN),
             SessionDisplay.resolutionOptions(2400 to 1080))
-        assertEquals(listOf("720p", "900p", "1080p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN),
+        assertEquals(low + listOf("720p", "900p", "1080p", SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN),
             SessionDisplay.resolutionOptions(3120 to 1440))
         val small = SessionDisplay.resolutionOptions(1280 to 720)
-        assertEquals(listOf(SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN), small)
+        assertEquals(low + listOf(SessionDisplay.MATCH_SCREEN, SessionDisplay.FOLLOW_SCREEN), small)
         assertEquals(1280 to 720, SessionDisplay.resolveChoice(1280 to 720, SessionDisplay.MATCH_SCREEN))
         assertEquals(2560 to 1440, SessionDisplay.resolveChoice(2560 to 1440, SessionDisplay.MATCH_SCREEN))
     }
