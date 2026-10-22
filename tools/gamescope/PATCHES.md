@@ -61,5 +61,12 @@ library list, before anything is published.
   mali-panvk-support branch: a driver may implement `VK_EXT_physical_device_drm` and still expose no
   nodes, which is what PanVK over `mali_kbase` does (`/dev/mali0` is a misc device with no DRM node).
   Such a device was refused; it now warns and carries on, refusing only when a named node fails to open.
+- `0121-shm-buffers-show-their-new-pixels.patch` - DroidDeck-Kirin: gamescope keeps one texture per
+  client buffer and reuses it on every commit of that buffer. For an shm buffer the texture is a copy
+  of its first contents, so a client that draws into a returned buffer again was shown the old
+  picture. Xwayland without glamor (a Mali phone: kbase has no DRM node, so no GBM) cycles two or
+  three shm buffers per window, and Steam's Big Picture blinked between stale pictures - the sign-in
+  screen and an empty one. A returning shm buffer now has its pixels copied in again, or gets a fresh
+  texture while the old one is still on screen.
 Sixteen more of Armada's patches are DRM/lease/HDR-on-KMS work for a native display, which this
 app's Wayland-hosted gamescope never reaches, or need a newer gamescope than the runtime has.
