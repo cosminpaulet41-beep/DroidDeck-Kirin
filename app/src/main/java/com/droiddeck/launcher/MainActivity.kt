@@ -144,6 +144,7 @@ class MainActivity : ComponentActivity() {
     private var gameCores by mutableStateOf<Set<Int>>(emptySet())
     private var tuSysmem by mutableStateOf(false)
     private var zinkLazy by mutableStateOf(false)
+    private var maliCefMode by mutableStateOf(SessionPrefs.CEF_AUTO)
     private var noXalia by mutableStateOf(true)
     private var fastSync by mutableStateOf(false)
     private var syncFallback by mutableStateOf(true)
@@ -1751,6 +1752,7 @@ class MainActivity : ComponentActivity() {
             cores = CpuCores.all.map { c -> CoreRow(c, "cpu$c" + (CpuCores.maxGhz(c)?.let { String.format(java.util.Locale.US, " · %.1f GHz", it) } ?: "")) },
             clientOverride = clientOverride, clientCores = clientCores, gameCores = gameCores,
             tuSysmem = tuSysmem, zinkLazy = zinkLazy, glThread = glThread, noGlError = noGlError, noXalia = noXalia,
+            maliCef = maliCefMode.takeIf { com.droiddeck.launcher.core.DeviceSupport.mali() },
             fastSync = fastSync,
             syncFallback = syncFallback,
             fsyncFirst = fsyncFirst,
@@ -1760,6 +1762,7 @@ class MainActivity : ComponentActivity() {
             onClientOverride = { on -> SessionPrefs.setClientCpusOverride(this, on); clientOverride = on },
             onTuSysmem = { on -> SessionPrefs.setTuSysmem(this, on); tuSysmem = on },
             onZinkLazy = { on -> SessionPrefs.setZinkLazy(this, on); zinkLazy = on },
+            onMaliCef = { mode -> SessionPrefs.setMaliCefMode(this, mode); maliCefMode = mode },
             onGlThread = { on -> SessionPrefs.setGlThread(this, on); glThread = on },
             onNoGlError = { on -> SessionPrefs.setNoGlError(this, on); noGlError = on },
             onNoXalia = { on -> SessionPrefs.setNoXalia(this, on); noXalia = on },
@@ -1919,6 +1922,7 @@ class MainActivity : ComponentActivity() {
         gameCores = CpuCores.parse(SessionPrefs.gameCpus(this)).ifEmpty { CpuCores.all.toSet() }
         tuSysmem = SessionPrefs.tuSysmem(this)
         zinkLazy = SessionPrefs.zinkLazy(this)
+        maliCefMode = SessionPrefs.maliCefMode(this)
         noXalia = SessionPrefs.noXalia(this)
         fastSync = SessionPrefs.fastSync(this)
         syncFallback = SessionPrefs.syncFallback(this)

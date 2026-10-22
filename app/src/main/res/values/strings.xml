@@ -535,6 +535,11 @@
     <string name="perf_zink_hint">Recommended for drivers without descriptor buffers.</string>
     <string name="perf_noglerror">Skip GL error checks</string>
     <string name="perf_noglerror_hint">Turns off per-call GL validation.</string>
+    <string name="perf_mali_cef">Steam interface drawing (Mali)</string>
+    <string name="perf_mali_cef_hint">How Steam\'s menus are drawn. Applies from the next Steam start.</string>
+    <string name="perf_mali_cef_auto">Processor, GL (works)</string>
+    <string name="perf_mali_cef_cpu">Processor, no GL (test)</string>
+    <string name="perf_mali_cef_note">Both draw on the processor. If the screen stays black with the test choice, stop Steam and switch back.</string>
     <string name="perf_gsrealtime">gamescope: realtime GPU queue</string>
     <string name="perf_gsrealtime_hint">Prioritizes the compositor\'s GPU work. Can smooth frame pacing at some cost to games.</string>
     <string name="perf_gpu">GPU</string>

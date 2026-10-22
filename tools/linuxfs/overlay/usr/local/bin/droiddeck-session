@@ -786,9 +786,12 @@ BUSCONF
     _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=vulkan)
     # On a Mali (PanVK over kbase) the web helper's own output window is where it fails: over
     # ANGLE's Vulkan backend its X connection dies ("Fatal IO error 11"), over Zink it dies a
-    # second after the Big Picture window shows, and with GPU compositing off it hangs creating
-    # that window. Gamescope and games stay on PanVK; only the client and its web helper draw
-    # their GL with llvmpipe by default. BL_CEF_MODE=llvmpipe|gl|vulkan|off picks. Games inherit the
+    # second after the Big Picture window shows, and with GPU compositing off but Zink GL it hangs
+    # creating that window. Steam's compositor reads each browser window back from its X pixmap;
+    # on the GPU that takes DRI3, and Xwayland has none without GBM (kbase has no DRM node).
+    # Gamescope and games stay on PanVK; only the client and its web helper draw their GL with
+    # llvmpipe: through ANGLE by default, or with the browser itself in software (cpu, the app's
+    # Performance setting). BL_CEF_MODE=llvmpipe|cpu|gl|vulkan picks. Games inherit the
     # client's environment, so the GL drivers it had go along in DROIDDECK_GAME_SOFT_GL and
     # droiddeck-game-env puts them back for a game.
     _bl_cef_fallback=
@@ -796,13 +799,13 @@ BUSCONF
     _bl_soft_gl=(-u MESA_LOADER_DRIVER_OVERRIDE GALLIUM_DRIVER=llvmpipe LIBGL_ALWAYS_SOFTWARE=1
       "DROIDDECK_GAME_SOFT_GL=${MESA_LOADER_DRIVER_OVERRIDE:-},${GALLIUM_DRIVER:-}")
     if [ "${BL_GPU_VENDOR:-}" = mali ]; then
+      # A GPU choice that ends the client early falls back to llvmpipe, llvmpipe to the CPU.
       case ${BL_CEF_MODE:-llvmpipe} in
-        vulkan) ;;
-        gl|zink) _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl) ;;
+        vulkan) _bl_cef_fallback=llvmpipe ;;
+        gl|zink) _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl); _bl_cef_fallback=llvmpipe ;;
         off|cpu) _bl_cef=(-cef-disable-gpu); _bl_cef_env=("${_bl_soft_gl[@]}") ;;
-        *) _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl); _bl_cef_env=("${_bl_soft_gl[@]}") ;;
+        *) _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl); _bl_cef_env=("${_bl_soft_gl[@]}"); _bl_cef_fallback=cpu ;;
       esac
-      [ "${_bl_cef[0]}" = -cef-disable-gpu ] || _bl_cef_fallback=1
       echo "== steam: Mali GPU, Steam's browser draws with ${_bl_cef[*]}${_bl_cef_env[*]:+ (GL: ${_bl_cef_env[*]})}"
     fi
     [ "${steam_cef_gpu:-1}" = 1 ] || _bl_cef=(-cef-disable-gpu)
@@ -1194,10 +1197,15 @@ BUSCONF
         break
       fi
       if [ -n "${_bl_cef_fallback:-}" ] && [ "$rc" != 42 ] && [ "$steam_ran" -lt 90 ]; then
-        _bl_cef_fallback=
-        _bl_cef=(-cef-disable-gpu)
         _bl_cef_env=("${_bl_soft_gl[@]}")
-        echo "== steam: the client ended after ${steam_ran}s on a Mali; starting it again with its browser on the CPU (${_bl_cef[*]}, GL: ${_bl_cef_env[*]})"
+        if [ "$_bl_cef_fallback" = llvmpipe ]; then
+          _bl_cef=(-cef-force-gpu -cef-use-gl=angle -cef-use-angle=gl)
+          _bl_cef_fallback=cpu
+        else
+          _bl_cef=(-cef-disable-gpu)
+          _bl_cef_fallback=
+        fi
+        echo "== steam: the client ended after ${steam_ran}s on a Mali; starting it again with its browser on ${_bl_cef[*]} (GL: ${_bl_cef_env[*]})"
         set --
         continue
       fi

@@ -533,6 +533,11 @@
     <string name="perf_zink_hint">Recomandat pentru drivere fără buffere de descriptori.</string>
     <string name="perf_noglerror">Omite verificările de erori GL</string>
     <string name="perf_noglerror_hint">Dezactivează validarea GL pentru fiecare apel.</string>
+    <string name="perf_mali_cef">Desenarea interfeței Steam (Mali)</string>
+    <string name="perf_mali_cef_hint">Cum sunt desenate meniurile Steam. Se aplică de la următoarea pornire Steam.</string>
+    <string name="perf_mali_cef_auto">Procesor, GL (merge)</string>
+    <string name="perf_mali_cef_cpu">Procesor, fără GL (test)</string>
+    <string name="perf_mali_cef_note">Ambele desenează pe procesor. Dacă ecranul rămâne negru cu varianta de test, oprește Steam și revino.</string>
     <string name="perf_gsrealtime">gamescope: coadă GPU în timp real</string>
     <string name="perf_gsrealtime_hint">Prioritizează lucrul GPU al compositorului. Poate netezi ritmul cadrelor, cu un cost pentru jocuri.</string>
     <string name="perf_gpu">GPU</string>

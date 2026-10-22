@@ -565,6 +565,8 @@ class SessionService : Service() {
         guest.add("BL_ANDROID_CLIPBOARD=" + File(filesDir, "session/android-clipboard").path)
         guest.add("GAMESCOPE_FORCE_GENERAL_QUEUE=1")
         guest.add("BL_GPU_VENDOR=" + com.droiddeck.launcher.gpu.GpuInfo.detectVendor().name.lowercase())
+        SessionPrefs.maliCefMode(this).takeIf { it != SessionPrefs.CEF_AUTO && DeviceSupport.mali() }
+            ?.let { guest.add("BL_CEF_MODE=$it") }
         guest.add("MESA_LOADER_DRIVER_OVERRIDE=zink")
         guest.add("GALLIUM_DRIVER=zink")
         guest.add("LIBGL_KOPPER_DRI2=true")

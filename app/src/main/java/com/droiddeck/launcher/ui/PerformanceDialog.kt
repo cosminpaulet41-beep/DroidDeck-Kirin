@@ -39,6 +39,7 @@ fun PerformancePage(
     glThread: Boolean,
     noGlError: Boolean,
     noXalia: Boolean,
+    maliCef: String?,
     fastSync: Boolean,
     syncFallback: Boolean,
     fsyncFirst: Boolean,
@@ -54,6 +55,7 @@ fun PerformancePage(
     onGlThread: (Boolean) -> Unit,
     onNoGlError: (Boolean) -> Unit,
     onNoXalia: (Boolean) -> Unit,
+    onMaliCef: (String) -> Unit,
     onFastSync: (Boolean) -> Unit,
     onSyncFallback: (Boolean) -> Unit,
     onFsyncFirst: (Boolean) -> Unit,
@@ -93,6 +95,14 @@ fun PerformancePage(
             )
         }
         SettingsGroup(stringResource(R.string.perf_client_ui)) {
+            if (maliCef != null) ChoiceRow(
+                host, "malicef", stringResource(R.string.perf_mali_cef),
+                stringResource(R.string.perf_mali_cef_hint),
+                listOf(
+                    SessionPrefs.CEF_AUTO to stringResource(R.string.perf_mali_cef_auto),
+                    SessionPrefs.CEF_CPU to stringResource(R.string.perf_mali_cef_cpu),
+                ), maliCef, note = stringResource(R.string.perf_mali_cef_note), onPick = onMaliCef,
+            )
             ToggleRow(
                 host, "glthread", stringResource(R.string.perf_glthread),
                 stringResource(R.string.perf_glthread_hint),

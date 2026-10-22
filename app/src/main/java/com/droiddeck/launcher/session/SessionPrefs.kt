@@ -433,6 +433,17 @@ object SessionPrefs {
 
     fun zinkLazy(context: Context): Boolean = prefs(context).getBoolean("zinkLazy", true)
 
+    /**
+     * How Steam's browser draws on a Mali (droiddeck-session BL_CEF_MODE); "auto" leaves the session's
+     * default, llvmpipe GL. No GPU choice: Steam's compositor reads each browser window back from its X
+     * pixmap, which on the GPU needs DRI3, and Xwayland has none without GBM (kbase has no DRM node).
+     */
+    const val CEF_AUTO = "auto"
+    const val CEF_CPU = "cpu"
+    fun maliCefMode(context: Context): String =
+        prefs(context).getString("maliCefMode", CEF_AUTO)?.takeIf { it == CEF_AUTO || it == CEF_CPU } ?: CEF_AUTO
+    fun setMaliCefMode(context: Context, mode: String) { prefs(context).edit().putString("maliCefMode", mode).apply() }
+
     fun setZinkLazy(context: Context, on: Boolean) {
         prefs(context).edit().putBoolean("zinkLazy", on).apply()
     }
