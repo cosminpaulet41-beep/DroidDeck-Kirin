@@ -112,6 +112,15 @@ class GameEnvironmentTest(unittest.TestCase):
         self.assertEqual(MODULE["apply_config"](env, config, "42")["TU_DEBUG"], "sysmem")
         self.assertNotIn("TU_DEBUG", MODULE["apply_config"](env, config, "43"))
 
+    def test_games_get_back_the_gl_drivers_the_steam_client_was_moved_off(self):
+        gpu = MODULE["game_gpu"]
+        client = {"GALLIUM_DRIVER": "llvmpipe", "LIBGL_ALWAYS_SOFTWARE": "1", "DROIDDECK_GAME_SOFT_GL": "zink,zink", "KEEP": "1"}
+        self.assertEqual(gpu(client), {"MESA_LOADER_DRIVER_OVERRIDE": "zink", "GALLIUM_DRIVER": "zink", "KEEP": "1"})
+        self.assertEqual(client["GALLIUM_DRIVER"], "llvmpipe")
+        self.assertEqual(gpu({"GALLIUM_DRIVER": "llvmpipe", "LIBGL_ALWAYS_SOFTWARE": "1", "DROIDDECK_GAME_SOFT_GL": ","}), {})
+        both = gpu({"TU_DEBUG": "sysmem", "DROIDDECK_GAME_TU_DEBUG": "", "DROIDDECK_GAME_SOFT_GL": "zink,zink", "GALLIUM_DRIVER": "llvmpipe"})
+        self.assertEqual(both, {"MESA_LOADER_DRIVER_OVERRIDE": "zink", "GALLIUM_DRIVER": "zink"})
+
     def test_a_games_wine_sync_choice_also_reaches_its_setup_runs(self):
         env = {"BL_SYNC": "1", "BL_SYNC_FALLBACK": "1", "BL_FSYNC_FIRST": "0", "OTHER": "kept"}
         config = {"version": 1, "games": {"42": {"BL_SYNC": "0", "BL_FSYNC_FIRST": "1", "PROTON_NO_ESYNC": "1", "FEX_TSOENABLED": "1"}}}

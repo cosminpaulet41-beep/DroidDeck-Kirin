@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 GAME_TU_DEBUG = "DROIDDECK_GAME_TU_DEBUG"
+GAME_SOFT_GL = "DROIDDECK_GAME_SOFT_GL"
 SYNC_KEYS = ("BL_SYNC", "BL_SYNC_FALLBACK", "BL_FSYNC_FIRST", "BL_SYNC_MIN_NOFILE", "PROTON_NO_ESYNC", "PROTON_NO_FSYNC", "PROTON_NO_NTSYNC", "WINEESYNC")
 SEED_REDISTS = "/usr/local/bin/droiddeck-seed-redists"
 PACK_KEYS = ("WINESERVER", "BL_SYNC_PACK", "WINEESYNC", "PROTON_NO_ESYNC", "PROTON_NO_FSYNC")
@@ -155,14 +156,24 @@ def win_components(compat, app_id):
 
 
 def game_gpu(env):
-    if GAME_TU_DEBUG not in env:
+    if GAME_TU_DEBUG not in env and GAME_SOFT_GL not in env:
         return env
     result = env.copy()
-    value = result.pop(GAME_TU_DEBUG)
-    if value:
-        result["TU_DEBUG"] = value
-    else:
-        result.pop("TU_DEBUG", None)
+    if GAME_TU_DEBUG in result:
+        value = result.pop(GAME_TU_DEBUG)
+        if value:
+            result["TU_DEBUG"] = value
+        else:
+            result.pop("TU_DEBUG", None)
+    if GAME_SOFT_GL in result:
+        # The Steam client drew its GL with llvmpipe (a Mali); a game gets the drivers it had before.
+        loader, _, gallium = result.pop(GAME_SOFT_GL).partition(",")
+        result.pop("LIBGL_ALWAYS_SOFTWARE", None)
+        for key, value in (("MESA_LOADER_DRIVER_OVERRIDE", loader), ("GALLIUM_DRIVER", gallium)):
+            if value:
+                result[key] = value
+            else:
+                result.pop(key, None)
     return result
 
 

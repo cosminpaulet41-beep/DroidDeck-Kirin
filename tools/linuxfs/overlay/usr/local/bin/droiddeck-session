@@ -788,10 +788,13 @@ BUSCONF
     # ANGLE's Vulkan backend its X connection dies ("Fatal IO error 11"), over Zink it dies a
     # second after the Big Picture window shows, and with GPU compositing off it hangs creating
     # that window. Gamescope and games stay on PanVK; only the client and its web helper draw
-    # their GL with llvmpipe by default. BL_CEF_MODE=llvmpipe|gl|vulkan|off picks.
+    # their GL with llvmpipe by default. BL_CEF_MODE=llvmpipe|gl|vulkan|off picks. Games inherit the
+    # client's environment, so the GL drivers it had go along in DROIDDECK_GAME_SOFT_GL and
+    # droiddeck-game-env puts them back for a game.
     _bl_cef_fallback=
     _bl_cef_env=()
-    _bl_soft_gl=(-u MESA_LOADER_DRIVER_OVERRIDE GALLIUM_DRIVER=llvmpipe LIBGL_ALWAYS_SOFTWARE=1)
+    _bl_soft_gl=(-u MESA_LOADER_DRIVER_OVERRIDE GALLIUM_DRIVER=llvmpipe LIBGL_ALWAYS_SOFTWARE=1
+      "DROIDDECK_GAME_SOFT_GL=${MESA_LOADER_DRIVER_OVERRIDE:-},${GALLIUM_DRIVER:-}")
     if [ "${BL_GPU_VENDOR:-}" = mali ]; then
       case ${BL_CEF_MODE:-llvmpipe} in
         vulkan) ;;
