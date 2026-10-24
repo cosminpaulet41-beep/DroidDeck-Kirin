@@ -165,6 +165,7 @@ static VkExtent2D levelExtent(VkExtent2D e, int l) {
 }
 
 bool FrameGen::onResize(VkExtent2D extent, VkFormat  , bool force) {
+    if (broken_) return false;
 
 
     if (!force && ready_ && extent.width == extent_.width && extent.height == extent_.height) return true;

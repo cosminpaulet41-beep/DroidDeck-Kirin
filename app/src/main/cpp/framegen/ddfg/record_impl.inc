@@ -26,6 +26,10 @@ struct ScratchState {
     bool flowReady = false;
 };
 ScratchState g_scratch;
+// Set when a descriptor set or a uniform buffer of the scratch could not be made. A driver that
+// holds the pool to its sizes (Mali) answers an exhausted pool with an error and no set, and an
+// update of a null set or buffer crashes inside such a driver.
+bool g_scratchFailed = false;
 }
 
 static bool makeUbo(const ddfg::DeviceDispatch* dd, VkDevice dev,
@@ -33,26 +37,33 @@ static bool makeUbo(const ddfg::DeviceDispatch* dd, VkDevice dev,
                     VkDeviceSize size, VkBuffer& buf, VkDeviceMemory& mem, void*& ptr) {
     VkBufferCreateInfo bi{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bi.size = size; bi.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT; bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    if (dd->CreateBuffer(dev, &bi, nullptr, &buf) != VK_SUCCESS) return false;
+    if (dd->CreateBuffer(dev, &bi, nullptr, &buf) != VK_SUCCESS) { buf = VK_NULL_HANDLE; g_scratchFailed = true; return false; }
     VkMemoryRequirements mr; dd->GetBufferMemoryRequirements(dev, buf, &mr);
     uint32_t idx = 0; VkMemoryPropertyFlags want = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     for (uint32_t i = 0; i < mp.memoryTypeCount; ++i)
         if ((mr.memoryTypeBits & (1u<<i)) && (mp.memoryTypes[i].propertyFlags & want) == want) { idx = i; break; }
     VkMemoryAllocateInfo ai{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO}; ai.allocationSize = mr.size; ai.memoryTypeIndex = idx;
-    if (dd->AllocateMemory(dev, &ai, nullptr, &mem) != VK_SUCCESS) return false;
-    if (dd->BindBufferMemory(dev, buf, mem, 0) != VK_SUCCESS) return false;
-    return dd->MapMemory(dev, mem, 0, size, 0, &ptr) == VK_SUCCESS;
+    if (dd->AllocateMemory(dev, &ai, nullptr, &mem) != VK_SUCCESS) { mem = VK_NULL_HANDLE; g_scratchFailed = true; return false; }
+    if (dd->BindBufferMemory(dev, buf, mem, 0) != VK_SUCCESS) { g_scratchFailed = true; return false; }
+    if (dd->MapMemory(dev, mem, 0, size, 0, &ptr) != VK_SUCCESS) { ptr = nullptr; g_scratchFailed = true; return false; }
+    return true;
 }
 
 static VkDescriptorSet allocSet(const ddfg::DeviceDispatch* dd, VkDevice dev,
                                 VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     VkDescriptorSetAllocateInfo ai{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
     ai.descriptorPool = pool; ai.descriptorSetCount = 1; ai.pSetLayouts = &layout;
-    VkDescriptorSet s = VK_NULL_HANDLE; dd->AllocateDescriptorSets(dev, &ai, &s); return s;
+    VkDescriptorSet s = VK_NULL_HANDLE;
+    if (dd->AllocateDescriptorSets(dev, &ai, &s) != VK_SUCCESS || s == VK_NULL_HANDLE) {
+        g_scratchFailed = true;
+        return VK_NULL_HANDLE;
+    }
+    return s;
 }
 
 static void wImg(const ddfg::DeviceDispatch* dd, VkDevice dev, VkDescriptorSet set, uint32_t binding,
                  VkDescriptorType type, VkImageView view, VkSampler samp, VkImageLayout layout) {
+    if (set == VK_NULL_HANDLE || view == VK_NULL_HANDLE) { g_scratchFailed = true; return; }
     VkDescriptorImageInfo ii{}; ii.imageView = view; ii.sampler = samp; ii.imageLayout = layout;
     VkWriteDescriptorSet w{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     w.dstSet = set; w.dstBinding = binding; w.descriptorCount = 1; w.descriptorType = type; w.pImageInfo = &ii;
@@ -60,6 +71,7 @@ static void wImg(const ddfg::DeviceDispatch* dd, VkDevice dev, VkDescriptorSet s
 }
 static void wUbo(const ddfg::DeviceDispatch* dd, VkDevice dev, VkDescriptorSet set, uint32_t binding,
                  VkBuffer buf, VkDeviceSize range) {
+    if (set == VK_NULL_HANDLE || buf == VK_NULL_HANDLE) { g_scratchFailed = true; return; }
     VkDescriptorBufferInfo bi{}; bi.buffer = buf; bi.range = range;
     VkWriteDescriptorSet w{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     w.dstSet = set; w.dstBinding = binding; w.descriptorCount = 1;
@@ -68,6 +80,7 @@ static void wUbo(const ddfg::DeviceDispatch* dd, VkDevice dev, VkDescriptorSet s
 }
 static void wSsbo(const ddfg::DeviceDispatch* dd, VkDevice dev, VkDescriptorSet set, uint32_t binding,
                   VkBuffer buf, VkDeviceSize range) {
+    if (set == VK_NULL_HANDLE || buf == VK_NULL_HANDLE) { g_scratchFailed = true; return; }
     VkDescriptorBufferInfo bi{}; bi.buffer = buf; bi.range = range;
     VkWriteDescriptorSet w{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     w.dstSet = set; w.dstBinding = binding; w.descriptorCount = 1;
@@ -261,10 +274,24 @@ void FrameGen::record(VkCommandBuffer cmd, VkImageView prevView, VkImageView cur
     const Pipe& expandP = m4 ? pExpandM4_ : pExpand_;
 
     if (!g_scratch.built || g_scratch.builtFor.width != extent_.width || g_scratch.builtFor.height != extent_.height) {
-        ensureScratch(this, dd_, device_, memProps_, descPool_, linear_, extent_,
-                      pyrA_, pyrB_, pyrAs_, flowLvl_, flowExpA_, flowExpB_,
-                      pLuma_, pDown_, flowP, expandP, pSynth_, pGmReduce_, pGmPrewarp_,
-                      pFlowReg_, flowRegA_, flowRegB_, gmSsbo_, kLevels, cfg_);
+        // A new size gets new scratch: the old sets and uniform buffers go back first, or every
+        // resize leaks them and a pool held to its sizes runs out (a Mali crashed in its driver).
+        if (g_scratch.built) {
+            dd_->DeviceWaitIdle(device_);
+            destroyScratch(dd_, device_, descPool_);
+        }
+        if (!ensureScratch(this, dd_, device_, memProps_, descPool_, linear_, extent_,
+                           pyrA_, pyrB_, pyrAs_, flowLvl_, flowExpA_, flowExpB_,
+                           pLuma_, pDown_, flowP, expandP, pSynth_, pGmReduce_, pGmPrewarp_,
+                           pFlowReg_, flowRegA_, flowRegB_, gmSsbo_, kLevels, cfg_)) {
+            dd_->DeviceWaitIdle(device_);
+            destroyScratch(dd_, device_, descPool_);
+            // Off for the session: the next prepare's onResize fails and the engine reports itself
+            // unavailable, instead of retrying (and waiting the device idle) every frame.
+            broken_ = true;
+            ready_ = false;
+            return;
+        }
     }
 
     // Every generation of one real frame is recorded into the same command buffer, so the flow
@@ -430,6 +457,7 @@ static bool ensureScratch(FrameGen* fg, const DeviceDispatch* dd, VkDevice dev,
                           int kLevels, const Config& cfg) {
     auto& S = g_scratch;
     S = ScratchState{};
+    g_scratchFailed = false;
     const auto GEN = VK_IMAGE_LAYOUT_GENERAL;
 
     for (int s = 0; s < FrameGen::kSynthSlots; ++s)
@@ -531,6 +559,11 @@ static bool ensureScratch(FrameGen* fg, const DeviceDispatch* dd, VkDevice dev,
         wImg(dd, dev, S.sSynth[s], 35, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, expB.view, samp, GEN);
     }
 
+    if (g_scratchFailed) {
+        DDFG_LOGE("scratch for %ux%u could not be built (descriptor pool or uniform buffers exhausted)",
+                  ext.width, ext.height);
+        return false;
+    }
     S.builtFor = ext; S.built = true;
     return true;
 }

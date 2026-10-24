@@ -77,6 +77,7 @@ private:
     Config    cfg_;
     VkExtent2D extent_{};
     bool ready_ = false;
+    bool broken_ = false;  // its scratch could not be built: frame generation stays off
     int  flowFinest_ = kFlowFinestDefault;
 
     Pipe pLuma_, pDown_, pFlow_, pFlowM4_, pExpand_, pExpandM4_, pSynth_;
