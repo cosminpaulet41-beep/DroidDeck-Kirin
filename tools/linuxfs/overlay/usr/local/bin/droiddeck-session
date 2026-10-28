@@ -552,6 +552,9 @@ case $mode in
         ) &
       fi
     fi
+    # Every 10 s of play: the game's busiest threads, the core and GPU clocks (processor or graphics bound?).
+    [ -z "${BL_DESKTOP:-}" ] && [ "${BL_GAME_PERF:-1}" = 1 ] && command -v droiddeck-game-perf >/dev/null 2>&1 &&
+      droiddeck-game-perf &
     [ -z "${BL_DESKTOP:-}" ] && (
       stretch=0 restore=0
       [ "${BL_STRETCHED:-0}" = 1 ] && stretch=1

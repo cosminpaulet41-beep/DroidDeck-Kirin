@@ -1,0 +1,98 @@
+#!/usr/bin/bash
+# Every 10 s while a game has the focus, one line for session.log: how much of a core each of the
+# game's busiest threads used, the cores' clocks and the GPU's clock. A thread near 100% means the
+# game waits on the processor (x86 code translated by FEX); low threads with the GPU at its top
+# clock mean it waits on the graphics. Android keeps /proc/stat from apps, so the game's own
+# threads (/proc/<pid>/task/<tid>/stat, same uid) are what can be measured.
+#
+# BL_PERF_APP fixes the focused app (tests); BL_PERF_MATCH is the pgrep -f pattern of the game's
+# processes; BL_PERF_INTERVAL the period in seconds; BL_PERF_ONCE=1 takes two samples and stops.
+set -u
+interval=${BL_PERF_INTERVAL:-10}
+match=${BL_PERF_MATCH:-'\.exe( |$)|wineserver'}
+hz=$(getconf CLK_TCK 2>/dev/null) || hz=100
+work=$(mktemp -d "${TMPDIR:-/tmp}/droiddeck-game-perf.XXXXXX") || exit 0
+trap 'rm -rf "$work"' EXIT
+prev=$work/prev cur=$work/cur
+: > "$prev"
+last=
+
+focused() {
+  if [ -n "${BL_PERF_APP:-}" ]; then echo "$BL_PERF_APP"; return; fi
+  xprop -root GAMESCOPE_FOCUSED_APP 2>/dev/null | sed -n 's/.*= *//p'
+}
+
+threads() {
+  local p t
+  for p in $(pgrep -f "$match" 2>/dev/null); do
+    for t in /proc/"$p"/task/*; do
+      [ -r "$t/stat" ] && cat "$t/stat" 2>/dev/null
+    done
+  done
+}
+
+clocks() {
+  local c f out= g name gpu=
+  for c in /sys/devices/system/cpu/cpu[0-9]*; do
+    f=$(cat "$c/cpufreq/scaling_cur_freq" 2>/dev/null) || f=
+    case $f in ''|*[!0-9]*) out+=" -" ;; *) out+=" $((f / 1000))" ;; esac
+  done
+  for g in /sys/class/devfreq/*; do
+    name=${g##*/}
+    case $name in *[Gg][Pp][Uu]*|*[Mm]ali*) ;; *) continue ;; esac
+    f=$(cat "$g/cur_freq" 2>/dev/null) || continue
+    case $f in ''|*[!0-9]*) continue ;; esac
+    gpu+=" $name $((f / 1000000)) MHz"
+    f=$(cat "$g/max_freq" 2>/dev/null) && case $f in ''|*[!0-9]*) ;; *) gpu+=" of $((f / 1000000))" ;; esac
+  done
+  printf 'cores MHz:%s | gpu:%s' "$out" "${gpu:- unknown}"
+}
+
+samples=0
+while :; do
+  app=$(focused)
+  case $app in
+    ''|0|769|*[!0-9]*) : > "$prev"; last=; sleep "$interval"; continue ;;
+  esac
+  now=$(date +%s.%N)
+  threads > "$cur"
+  if [ -n "$last" ] && [ -s "$prev" ]; then
+    line=$(awk -v hz="$hz" -v dt="$(awk -v a="$last" -v b="$now" 'BEGIN { print b - a }')" '
+      FNR == NR { before[$1] = $2; next }
+      {
+        lp = index($0, "("); rp = 0
+        for (i = length($0); i > 0; i--) if (substr($0, i, 1) == ")") { rp = i; break }
+        if (!lp || !rp) next
+        tid = substr($0, 1, lp - 2); name = substr($0, lp + 1, rp - lp - 1)
+        n = split(substr($0, rp + 2), f, " ")
+        ticks = f[12] + f[13]
+        if (!(tid in before) || dt <= 0) next
+        pct = (ticks - before[tid]) * 100 / (hz * dt)
+        if (pct < 0) next
+        total += pct; use[tid] = pct; label[tid] = name
+      }
+      END {
+        out = sprintf("game threads %.0f%% of one core", total)
+        for (k = 0; k < 4; k++) {
+          best = ""; top = -1
+          for (t in use) if (use[t] > top) { top = use[t]; best = t }
+          if (best == "" || top < 1) break
+          out = out sprintf("%s %s %.0f%%", k ? "," : "; busiest:", label[best], top)
+          delete use[best]
+        }
+        print out
+      }' "$prev" "$cur")
+    echo "== perf (app $app): $line | $(clocks)"
+    samples=$((samples + 1))
+    [ "${BL_PERF_ONCE:-0}" = 1 ] && [ "$samples" -ge 1 ] && exit 0
+  fi
+  awk '{
+    lp = index($0, "("); rp = 0
+    for (i = length($0); i > 0; i--) if (substr($0, i, 1) == ")") { rp = i; break }
+    if (!lp || !rp) next
+    split(substr($0, rp + 2), f, " ")
+    print substr($0, 1, lp - 2), f[12] + f[13]
+  }' "$cur" > "$prev"
+  last=$now
+  sleep "$interval"
+done
